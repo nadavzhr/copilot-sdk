@@ -7,6 +7,7 @@ data visualization powered by the GitHub Copilot SDK.
 """
 
 import asyncio
+import shutil
 import sys
 
 from rich.console import Console
@@ -16,6 +17,16 @@ from rich.prompt import Prompt
 from agent.client import HardwareAgent
 
 console = Console()
+
+
+def check_copilot_cli() -> bool:
+    """Check if the Copilot CLI is installed and available.
+
+    Returns:
+        True if the CLI is found, False otherwise.
+    """
+    return shutil.which("copilot") is not None
+
 
 BANNER = """
 ╔═══════════════════════════════════════════════════════════╗
@@ -45,6 +56,25 @@ HELP_TEXT = """
 async def main() -> None:
     """Main entry point for the Hardware Agent CLI."""
     console.print(BANNER, style="bold blue")
+
+    # Check for Copilot CLI before attempting to start
+    if not check_copilot_cli():
+        console.print(
+            Panel(
+                "[bold red]GitHub Copilot CLI not found![/bold red]\n\n"
+                "The Hardware Agent requires the GitHub Copilot CLI to be installed.\n\n"
+                "[bold]To install:[/bold]\n"
+                "  1. Install GitHub Copilot CLI from: "
+                "[link]https://docs.github.com/en/copilot/github-copilot-in-the-cli[/link]\n"
+                "  2. Ensure 'copilot' is in your system PATH\n"
+                "  3. Authenticate with: [cyan]copilot auth login[/cyan]\n\n"
+                "[dim]Alternatively, set COPILOT_CLI_PATH environment variable "
+                "to the full path of the CLI executable.[/dim]",
+                title="⚠️  Missing Dependency",
+                border_style="red",
+            )
+        )
+        sys.exit(1)
 
     agent = HardwareAgent()
 
@@ -84,8 +114,42 @@ async def main() -> None:
                 console.print("\n[yellow]Interrupted. Type 'exit' to quit.[/yellow]")
                 continue
 
+    except FileNotFoundError as e:
+        # Handle case where CLI path is set but file doesn't exist
+        console.print(
+            Panel(
+                f"[bold red]Could not start Copilot CLI:[/bold red]\n\n"
+                f"{e}\n\n"
+                "[bold]Please ensure:[/bold]\n"
+                "  1. GitHub Copilot CLI is installed\n"
+                "  2. The 'copilot' command is in your PATH\n"
+                "  3. You are authenticated with: [cyan]copilot auth login[/cyan]",
+                title="⚠️  CLI Error",
+                border_style="red",
+            )
+        )
+        sys.exit(1)
+
     except Exception as e:
-        console.print(f"[red]Error: {e}[/red]")
+        error_msg = str(e)
+        # Check for common Windows error when CLI not found
+        if "WinError 2" in error_msg or "cannot find the file" in error_msg.lower():
+            console.print(
+                Panel(
+                    "[bold red]GitHub Copilot CLI not found![/bold red]\n\n"
+                    "The 'copilot' command could not be executed.\n\n"
+                    "[bold]Please ensure:[/bold]\n"
+                    "  1. GitHub Copilot CLI is installed\n"
+                    "  2. The 'copilot' command is in your PATH\n"
+                    "  3. You are authenticated with: [cyan]copilot auth login[/cyan]\n\n"
+                    "[dim]On Windows, you may need to restart your terminal "
+                    "after installation.[/dim]",
+                    title="⚠️  CLI Not Found",
+                    border_style="red",
+                )
+            )
+        else:
+            console.print(f"[red]Error: {e}[/red]")
         sys.exit(1)
 
     finally:

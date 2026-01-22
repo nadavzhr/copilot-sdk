@@ -12,10 +12,17 @@ A proof-of-concept Python CLI tool that demonstrates modern agentic workflow fea
 - **Permission Handlers**: Interactive approval for sensitive operations
 - **Skills Directory**: Domain knowledge for hardware expertise
 
-## Requirements
+## Prerequisites
 
-- Python 3.8+
-- GitHub Copilot CLI installed and authenticated
+Before running the Hardware Agent, ensure you have:
+
+1. **Python 3.8+** installed
+2. **GitHub Copilot CLI** installed and authenticated:
+   - Install from: https://docs.github.com/en/copilot/github-copilot-in-the-cli
+   - Verify installation: `copilot --version`
+   - Authenticate: `copilot auth login`
+
+> **Note for Windows users**: After installing the Copilot CLI, you may need to restart your terminal or add the installation directory to your PATH.
 
 ## Installation
 
@@ -158,6 +165,31 @@ samples/hardware-agent/
 │                   Copilot CLI Server                         │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+## Troubleshooting
+
+### "The system cannot find the file specified" (Windows)
+
+This error occurs when the GitHub Copilot CLI is not installed or not in your PATH.
+
+**Solution:**
+1. Install the GitHub Copilot CLI: https://docs.github.com/en/copilot/github-copilot-in-the-cli
+2. Restart your terminal after installation
+3. Verify with: `copilot --version`
+4. If still not working, set `COPILOT_CLI_PATH` environment variable to the full path of the executable
+
+### "copilot: command not found" (macOS/Linux)
+
+**Solution:**
+1. Install the GitHub Copilot CLI
+2. Add the installation directory to your PATH
+3. Run: `copilot auth login` to authenticate
+
+### Authentication errors
+
+**Solution:**
+1. Run `copilot auth status` to check your authentication status
+2. Run `copilot auth login` to authenticate or re-authenticate
 
 ## License
 
