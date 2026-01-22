@@ -45,54 +45,55 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### Built-in Commands
+### Slash Commands
 
 | Command | Description |
 |---------|-------------|
-| `exit`, `quit` | Exit the agent |
-| `help` | Show help message |
-| `jobs` | List background jobs |
-| `dashboard` | Generate system dashboard |
+| `/cpu` | Show CPU statistics |
+| `/memory` | Show memory usage |
+| `/disk` | Show disk usage |
+| `/network` | Show network stats |
+| `/dashboard` | Generate system dashboard |
+| `/jobs` | List background jobs |
+| `/top` | Show top processes |
+| `/help` | Show help message |
+| `/clear` | Clear the screen |
+| `/quit` | Exit the agent |
 
-### Example Prompts
+### Natural Language
+
+Just type naturally to interact with the agent:
 
 ```
 You: Show me current CPU and memory usage
+```
 
-Agent: 🔧 Running: get_cpu_stats...
-       🔧 Running: get_memory_stats...
-       
-Here's your current system status:
+### Example Session
 
-**CPU**: 23.5% average usage across 8 cores
-**Memory**: 12.4 GB used of 32 GB (38.8%)
-**Swap**: Minimal usage at 2.1%
+```
+You: /cpu
 
-Everything looks healthy! Would you like me to create a dashboard visualization?
+╭─────────────────────────────────────── Agent ───────────────────────────────────────╮
+│ ## CPU Statistics                                                                    │
+│                                                                                      │
+│ **Overall Usage**: 23.5%                                                            │
+│ **Core Count**: 8 cores                                                             │
+│ **Frequency**: 2800 MHz (max: 3600 MHz)                                             │
+│                                                                                      │
+│ ✓ CPU usage is normal. Values below 70% indicate healthy performance.               │
+╰──────────────────────────────────────────────────────────────────────────────────────╯
 
-You: Yes, and also run a stress test in the background
+You: Create a dashboard and save it
 
-⚠️  Agent Requesting Permission
-Type: shell
-Command: stress --cpu 4 --timeout 60
-
-Allow this command? [y/n]: y
-
-Agent: I've started the stress test as a background job:
-- Job ID: job_a1b2c3d4
-- PID: 12345
-- Status: running
-
-The dashboard has been saved to ./plots/dashboard_20240122_143022.png
-
-You: jobs
-
-Agent: Current background jobs:
-┌────────────────┬───────┬─────────┬────────────────────┐
-│ Job ID         │ PID   │ Status  │ Command            │
-├────────────────┼───────┼─────────┼────────────────────┤
-│ job_a1b2c3d4   │ 12345 │ running │ stress --cpu 4...  │
-└────────────────┴───────┴─────────┴────────────────────┘
+╭─────────────────────────────────────── Agent ───────────────────────────────────────╮
+│ I've created a comprehensive system dashboard with:                                  │
+│ - CPU usage by core                                                                 │
+│ - Memory allocation                                                                 │
+│ - Disk usage                                                                        │
+│ - Network I/O                                                                       │
+│                                                                                      │
+│ Dashboard saved to: ./plots/dashboard_20240122_143022.png                           │
+╰──────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Project Structure
