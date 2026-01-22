@@ -1,0 +1,8 @@
+# Install the local Copilot SDK package in editable mode
+-e ../../python
+
+# Additional dependencies for hardware-agent
+pydantic>=2.0
+matplotlib
+psutil
+rich
