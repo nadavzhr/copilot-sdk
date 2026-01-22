@@ -1,5 +1,7 @@
 """Custom agent configurations for the Hardware Agent."""
 
+from typing import List
+
 from copilot import CustomAgentConfig
 
 SYSADMIN_AGENT: CustomAgentConfig = {
@@ -50,4 +52,4 @@ Always explain your analysis in plain terms.
     "infer": True,
 }
 
-HARDWARE_AGENTS: list[CustomAgentConfig] = [SYSADMIN_AGENT, ANALYST_AGENT]
+HARDWARE_AGENTS: List[CustomAgentConfig] = [SYSADMIN_AGENT, ANALYST_AGENT]

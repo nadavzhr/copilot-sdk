@@ -1,6 +1,6 @@
 """Permission request handlers for sensitive operations."""
 
-from typing import Any
+from typing import Any, Dict, List
 
 from rich.console import Console
 from rich.panel import Panel
@@ -11,7 +11,7 @@ from copilot import PermissionRequest, PermissionRequestResult
 console = Console()
 
 # Commands that are always safe (read-only operations)
-SAFE_COMMANDS: list[str] = [
+SAFE_COMMANDS: List[str] = [
     "ls",
     "pwd",
     "whoami",
@@ -34,7 +34,7 @@ SAFE_COMMANDS: list[str] = [
 ]
 
 # Commands that require explicit approval due to potential danger
-DANGEROUS_COMMANDS: list[str] = [
+DANGEROUS_COMMANDS: List[str] = [
     "rm",
     "dd",
     "mkfs",
@@ -51,7 +51,7 @@ DANGEROUS_COMMANDS: list[str] = [
 
 
 def on_permission_request(
-    request: PermissionRequest, invocation: dict[str, Any]
+    request: PermissionRequest, invocation: Dict[str, Any]
 ) -> PermissionRequestResult:
     """Handle permission requests from the agent.
 
