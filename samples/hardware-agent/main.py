@@ -140,6 +140,10 @@ async def main() -> None:
             except KeyboardInterrupt:
                 console.print("\n[yellow]Interrupted. Type /quit to exit.[/yellow]")
                 continue
+            except asyncio.CancelledError:
+                # Handle task cancellation gracefully (can happen during permission prompts)
+                console.print("\n[yellow]Operation cancelled. Try again.[/yellow]")
+                continue
 
     except FileNotFoundError as e:
         console.print(

@@ -1,12 +1,10 @@
 """Main hardware agent client wrapper."""
 
 import asyncio
+import time
 from typing import Optional
 
 from rich.console import Console
-from rich.live import Live
-from rich.spinner import Spinner
-from rich.text import Text
 
 from copilot import CopilotClient, CopilotSession
 from copilot.generated.session_events import SessionEvent, SessionEventType
@@ -82,6 +80,7 @@ class HardwareAgent:
         self._current_spinner_text = ""
         self._output_buffer = ""
         self._tool_count = 0
+        self._waiting_for_permission = False
 
     async def initialize(self) -> None:
         """Initialize the Copilot client and create session."""
@@ -111,13 +110,22 @@ class HardwareAgent:
                         create_system_dashboard,
                     ],
                     "custom_agents": HARDWARE_AGENTS,
-                    "on_permission_request": on_permission_request,
+                    "on_permission_request": self._handle_permission,
                     "system_message": {"mode": "append", "content": SYSTEM_INSTRUCTIONS},
                     "skill_directories": ["./skills"],
                 }
             )
 
         self.console.print("[green]✓ Hardware Agent ready![/green]")
+
+    def _handle_permission(self, request, invocation) -> dict:
+        """Handle permission requests, signaling that we need user input."""
+        self._waiting_for_permission = True
+        try:
+            result = on_permission_request(request, invocation)
+            return result
+        finally:
+            self._waiting_for_permission = False
 
     async def generate(self, prompt: str, timeout: float = 120.0) -> Optional[str]:
         """Send a message and wait for the complete response.
@@ -138,6 +146,7 @@ class HardwareAgent:
         self._output_buffer = ""
         self._tool_count = 0
         self._current_spinner_text = ""
+        self._waiting_for_permission = False
         idle_event = asyncio.Event()
         error_message: Optional[str] = None
 
@@ -173,39 +182,57 @@ class HardwareAgent:
 
         # Subscribe to events
         unsubscribe = self.session.on(event_handler)
+        start_time = time.monotonic()
+        status = None
 
         try:
-            # Show spinner while waiting
-            with self.console.status(
-                "[bold cyan]🤔 Thinking...", spinner="dots"
-            ) as status:
-                # Send the prompt
-                await self.session.send({"prompt": prompt})
+            # Start spinner
+            status = self.console.status("[bold cyan]🤔 Thinking...", spinner="dots")
+            status.start()
 
-                # Track elapsed time for timeout
-                import time
-                start_time = time.monotonic()
+            # Send the prompt
+            await self.session.send({"prompt": prompt})
 
-                # Wait for completion with periodic status updates
-                while not idle_event.is_set():
-                    # Check for timeout
-                    elapsed = time.monotonic() - start_time
-                    if elapsed >= timeout:
-                        self.console.print(f"[yellow]⚠️ Request timed out after {timeout}s[/yellow]")
-                        return None
+            # Wait for completion with periodic status updates
+            while not idle_event.is_set():
+                # Check for timeout
+                elapsed = time.monotonic() - start_time
+                if elapsed >= timeout:
+                    if status:
+                        status.stop()
+                    self.console.print(f"[yellow]⚠️ Request timed out after {timeout}s[/yellow]")
+                    return None
 
-                    # Update spinner text if tools are running
+                # Stop spinner if waiting for permission (so user can interact)
+                if self._waiting_for_permission:
+                    if status:
+                        status.stop()
+                        status = None
+                elif status is None and not self._waiting_for_permission:
+                    # Restart spinner after permission is handled
+                    status = self.console.status("[bold cyan]🤔 Processing...", spinner="dots")
+                    status.start()
+
+                # Update spinner text if tools are running
+                if status:
                     if self._current_spinner_text:
                         status.update(f"[bold cyan]{self._current_spinner_text}")
                     elif self._output_buffer:
                         lines = len(self._output_buffer.split("\n"))
                         status.update(f"[bold cyan]✨ Generating response... ({lines} lines)")
 
-                    # Wait for idle event with short timeout for UI updates
-                    try:
-                        await asyncio.wait_for(idle_event.wait(), timeout=0.5)
-                    except asyncio.TimeoutError:
-                        continue  # Keep waiting, check timeout on next iteration
+                # Wait for idle event with short timeout for UI updates
+                try:
+                    await asyncio.wait_for(asyncio.shield(idle_event.wait()), timeout=0.5)
+                except asyncio.TimeoutError:
+                    continue  # Keep waiting, check timeout on next iteration
+                except asyncio.CancelledError:
+                    # Handle cancellation gracefully (e.g., from permission prompts)
+                    continue
+
+            # Stop spinner when done
+            if status:
+                status.stop()
 
             if error_message:
                 self.console.print(f"[red]❌ Error: {error_message}[/red]")
@@ -213,7 +240,18 @@ class HardwareAgent:
 
             return self._output_buffer.strip() if self._output_buffer else None
 
+        except asyncio.CancelledError:
+            # Handle cancellation gracefully
+            if status:
+                status.stop()
+            return None
+
         finally:
+            if status:
+                try:
+                    status.stop()
+                except Exception:
+                    pass
             unsubscribe()
 
     def _get_tool_friendly_name(self, tool_name: str) -> dict:
